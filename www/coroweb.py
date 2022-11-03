@@ -41,6 +41,7 @@ def post(path):
     return decorator
 
 
+# 如果函数参数包含关键字参数并且关键字参数值为空则返回关键字参数的元组
 def get_required_kw_args(fn):
     args = []
     params = inspect.signature(fn).parameters
@@ -50,6 +51,7 @@ def get_required_kw_args(fn):
     return tuple(args)
 
 
+# 如果有关键字参数则取出返回元组
 def get_named_kw_args(fn):
     args = []
     params = inspect.signature(fn).parameters
@@ -59,6 +61,7 @@ def get_named_kw_args(fn):
     return tuple(args)
 
 
+# 判断函数是否有关键字参数，如果有则返回True
 def has_named_kw_args(fn):
     params = inspect.signature(fn).parameters
     for name, param in params.items():
@@ -66,6 +69,7 @@ def has_named_kw_args(fn):
             return True
 
 
+# 判断函数是否有字典参数，如果有则返回True
 def has_var_kw_arg(fn):
     params = inspect.signature(fn).parameters
     for name, param in params.items():
@@ -73,6 +77,9 @@ def has_var_kw_arg(fn):
             return True
 
 
+# 判断函数的参数有没有request，如果有request参数则把found赋值为True并结束本次循环继续判断其他参数
+# 如果其他参数不是可变参数，也不是关键字参数，也不是字典参数则抛出错误
+# 例如响应函数index(request)只有一个参数request所以在执行第一个if以后就没有参数循环了，退出整个循环返回found的值为True
 def has_request_arg(fn):
     sig = inspect.signature(fn)
     params = sig.parameters
