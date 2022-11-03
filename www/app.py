@@ -118,7 +118,7 @@ def index(request):
 
 async def init():
     await orm.create_pool(loop=loop, host='127.0.0.1', port=3306, user='root', password='root', db='awesome')
-    app = web.Application()  # loop=loop 会提示loop弃用，此处为空
+    app = web.Application(middlewares=[logger_factory, response_factory])  # middlewares是拦截器
 
     init_jinja2(app, filters=dict(datetime=datetime_filter))
     add_routes(app, 'handlers')
