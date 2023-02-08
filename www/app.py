@@ -1,6 +1,8 @@
 import logging
 
-logging.basicConfig(level=logging.INFO)
+from www.common.log.log import logger
+
+#logger.basicConfig(level=logging.INFO)
 
 import asyncio, os, json, time
 from datetime import datetime
@@ -13,7 +15,7 @@ from coroweb import add_routes, add_static
 
 
 def init_jinja2(app, **kw):
-    logging.info('init jinja2...')
+    logger.info('init jinja2...')
     options = dict(
         autoescape=kw.get('autoescape', True),
         block_start_string=kw.get('block_start_string', '{%'),
@@ -25,7 +27,7 @@ def init_jinja2(app, **kw):
     path = kw.get('path', None)
     if path is None:
         path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'templates')
-    logging.info('set jinja2 template path: %s' % path)
+    logger.info('set jinja2 template path: %s' % path)
     env = Environment(loader=FileSystemLoader(path), **options)
     filters = kw.get('filters', None)
     if filters is not None:
@@ -35,12 +37,12 @@ def init_jinja2(app, **kw):
 
 
 async def logger_factory(app, handler):
-    async def logger(request):
-        logging.info('Request: %s %s' % (request.method, request.path))
+    async def logger_fun(request):
+        logger.info('Request: %s %s' % (request.method, request.path))
         # await asyncio.sleep(0.3)
         return (await handler(request))
 
-    return logger
+    return logger_fun
 
 
 async def data_factory(app, handler):
@@ -48,10 +50,10 @@ async def data_factory(app, handler):
         if request.method == 'POST':
             if request.content_type.startswith('application/json'):
                 request.__data__ = await request.json()
-                logging.info('request json: %s' % str(request.__data__))
+                logger.info('request json: %s' % str(request.__data__))
             elif request.content_type.startswith('application/x-www-form-urlencoded'):
                 request.__data__ = await request.post()
-                logging.info('request form: %s' % str(request.__data__))
+                logger.info('request form: %s' % str(request.__data__))
         return (await handler(request))
 
     return parse_data
@@ -59,7 +61,7 @@ async def data_factory(app, handler):
 
 async def response_factory(app, handler):
     async def response(request):
-        logging.info('Response handler...')
+        logger.info('Response handler...')
         r = await handler(request)
         if isinstance(r, web.StreamResponse):
             return r
@@ -128,7 +130,8 @@ async def init():
     await app_runner.setup()
     srv = web.TCPSite(app_runner, '127.0.0.1', 9000)  # 原有的方法弃用，使用此方法运行成功
     await srv.start()
-    logging.info('server started at http://127.0.0.1:9000...')
+    logger.info('server started at http://127.0.0.1:9000...')
+    #logging.info('server started at http://127.0.0.1:9000...')
     return srv
 
 
