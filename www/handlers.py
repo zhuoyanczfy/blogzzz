@@ -7,6 +7,7 @@ from random import randint
 from aiohttp import web
 import aiotask_context as aiocontext
 from www.apis import APIValueError, APIError
+from www.common.log.log import logger
 from www.common.web.user import user2cookie
 from www.coroweb import get, post
 from www.models import User, Blog, next_id
@@ -31,9 +32,9 @@ def signin():
 async def authenticate(*, email, passwd):
     try:
         if not email:
-            raise APIValueError('email', 'Invalid email.')
+            raise APIValueError('email', 'Can not find email.')
         if not passwd:
-            raise APIValueError('passwd', 'Invalid password.')
+            raise APIValueError('passwd', 'Can not find password.')
         users = await User.findAll('email=?', [email])
 
         if len(users) == 0:
@@ -45,17 +46,18 @@ async def authenticate(*, email, passwd):
         sha1.update(b':')
         sha1.update(passwd.encode('utf-8'))
         if user.passwd != sha1.hexdigest():
-            raise APIValueError('passwd', 'Invalid password.')
+            raise APIValueError('passwd', f'user:{user.name} Invalid password.')
         # authenticate ok, set cookie:
         r = web.Response()
         r.set_cookie(COOKIE_NAME, user2cookie(user, 86400), max_age=86400, httponly=True)
         user.passwd = '******'
         r.content_type = 'application/json'
         r.body = json.dumps(user, ensure_ascii=False).encode('utf-8')
-        logging.info(f"user:{user.name} log in")
+
+        logger.info(f"user:{user.name} log in")
         return r
     except APIValueError as e:
-        logging.error(e)
+        logger.error(e)
 
 
 
@@ -64,7 +66,7 @@ def signout(request):
     referer = request.headers.get('Referer')
     r = web.HTTPFound(referer or '/')
     r.set_cookie(COOKIE_NAME, '-deleted-', max_age=0, httponly=True)
-    logging.info('user signed out.')
+    logger.info('user signed out.')
     return r
 
 
@@ -93,7 +95,7 @@ async def create_user(*, email, password, name):
                 image='https://dn-qiniu-avatar.qbox.me/avatar/%s?d=mm&s=120' % hashlib.md5(
                     email.encode('utf-8')).hexdigest())
     await user.save()
-    logging.info(f"create user successful! username:{user.name}")
+    logger.info(f"create user successful! username:{user.name}")
     # make session cookie:
     r = web.Response()
     r.set_cookie(COOKIE_NAME, user2cookie(user, 86400), max_age=86400, httponly=True)

@@ -1,3 +1,4 @@
+import logging
 from heapq import merge
 
 from www.conf import config_default
@@ -32,9 +33,10 @@ LOG_CONFIG = {
             'formatter': 'simple'
         },
         'file_handler': {
-            'level': 'INFO',
-            'class': 'logging.handlers.TimedRotatingFileHandler',
+            'level': logging.INFO,
+            'class': 'logging.handlers.RotatingFileHandler',
             'filename': './log.txt',  # 具体日志文件的名字
+            'maxBytes': 10*10*1024,
             'backupCount': 10,
             'formatter': 'standard'
         }  # 用于文件输出

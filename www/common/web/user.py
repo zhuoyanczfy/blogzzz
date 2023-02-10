@@ -2,6 +2,8 @@ import asyncio
 import hashlib
 import logging
 import time
+
+from www.common.log.log import logger
 from www.const import _COOKIE_KEY
 
 # 计算加密的cookie
@@ -44,5 +46,5 @@ def cookie2user(cookie_str):
         user.passwd = '******'
         return user
     except Exception as e:
-        logging.exception(e)
+        logger.error(e)
         return None
