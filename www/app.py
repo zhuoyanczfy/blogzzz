@@ -12,6 +12,8 @@ from jinja2 import Environment, FileSystemLoader
 
 import orm
 from coroweb import add_routes, add_static
+from www.common.web.user import cookie2user
+from www.const import COOKIE_NAME
 
 
 def init_jinja2(app, **kw):
@@ -35,7 +37,7 @@ def init_jinja2(app, **kw):
             env.filters[name] = f
     app['__templating__'] = env
 
-
+# 日志拦截器
 async def logger_factory(app, handler):
     async def logger_fun(request):
         logger.info('Request: %s %s' % (request.method, request.path))
@@ -58,7 +60,7 @@ async def data_factory(app, handler):
 
     return parse_data
 
-
+# 响应拦截器
 async def response_factory(app, handler):
     async def response(request):
         logger.info('Response handler...')
@@ -100,6 +102,25 @@ async def response_factory(app, handler):
     return response
 
 
+# cookie 拦截器
+@asyncio.coroutine
+def auth_factory(app, handler):
+    @asyncio.coroutine
+    def auth(request):
+        logging.info('check user: %s %s' % (request.method, request.path))
+        request.__user__ = None
+        cookie_str = request.cookies.get(COOKIE_NAME)
+        if cookie_str:
+            user = yield from cookie2user(cookie_str)
+            if user:
+                logging.info('set current user: %s' % user.email)
+                request.__user__ = user
+        if request.path.startswith('/manage/') and (request.__user__ is None or not request.__user__.admin):
+            return web.HTTPFound('/signin')
+        return (yield from handler(request))
+    return auth
+
+
 def datetime_filter(t):
     delta = int(time.time() - t)
     if delta < 60:
@@ -120,7 +141,7 @@ def index(request):
 
 async def init():
     await orm.create_pool(loop=loop, host='127.0.0.1', port=3306, user='root', password='root', db='awesome')
-    app = web.Application(middlewares=[logger_factory, response_factory])  # middlewares是拦截器
+    app = web.Application(middlewares=[logger_factory, auth_factory, response_factory])  # middlewares是拦截器
 
     init_jinja2(app, filters=dict(datetime=datetime_filter))
     add_routes(app, 'handlers')

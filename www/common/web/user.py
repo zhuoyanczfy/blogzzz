@@ -48,3 +48,6 @@ def cookie2user(cookie_str):
     except Exception as e:
         logger.error(e)
         return None
+
+def check_admin(request):
+    pass
